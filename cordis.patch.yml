@@ -1,0 +1,7 @@
+# dsh-plugin-toolsets bundle layer: inserts the toolsets service plugin row.
+# Loaded by `dsh plugin --profile <name> add link:<this dir>` (or github:/npm).
+# The `name` is the package entry; Loader resolves it from profile node_modules.
+# The plugin default-exports the ToolsetsService class (service name: 'toolsets').
+- insert:
+    - id: toolsets
+      name: '@huanlin/dsh-plugin-toolsets'
