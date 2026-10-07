@@ -6,7 +6,7 @@ vi.mock('@deepseek-ai/dsh-tools', () => ({
 }))
 
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { validateToolset } from '../src/registry.ts'
+import { renderCatalogDescription, validateToolset } from '../src/registry.ts'
 import type { ToolsetDefinition } from '../src/registry.ts'
 
 function makeTool(name: string): ToolDefinition {
@@ -72,5 +72,24 @@ describe('validateToolset', () => {
   it('rejects a tool name already claimed by another toolset', () => {
     const other = makeToolset({ name: 'other', tools: [makeTool('demo_greet'), makeTool('other_tool')] })
     expect(() => validateToolset(makeToolset(), [other])).toThrow(/already claimed by toolset "other"/)
+  })
+})
+
+describe('renderCatalogDescription', () => {
+  it('renders one line per toolset with a collapsed description and tool count', () => {
+    const toolsets = [
+      makeToolset({ name: 'android', description: 'Operate a real\n  Android phone.' , tools: [makeTool('a'), makeTool('b')] }),
+      makeToolset({ name: 'gaokao', description: 'Chinese college admission data.' }),
+    ]
+    const text = renderCatalogDescription(toolsets)
+    expect(text).toContain('- android: Operate a real Android phone. (2 tools)')
+    expect(text).toContain('- gaokao: Chinese college admission data. (1 tool)')
+    expect(text).toContain('{"toolset": "<name>"}')
+  })
+
+  it('truncates descriptions over 200 chars to 197 + ellipsis', () => {
+    const long = 'x'.repeat(300)
+    const text = renderCatalogDescription([makeToolset({ description: long })])
+    expect(text).toContain(`- demo: ${'x'.repeat(197)}… (1 tool)`)
   })
 })

@@ -83,3 +83,29 @@ export function validateToolset(toolset: ToolsetDefinition, existing: Iterable<T
     }
   }
 }
+
+/** Collapse a multiline description to one trimmed line, truncated at 200 chars. */
+function catalogLine(text: string): string {
+  const collapsed = text.trim().replace(/\s+/g, ' ')
+  return collapsed.length > 200 ? `${collapsed.slice(0, 197)}…` : collapsed
+}
+
+/**
+ * Render the model-facing catalog: the usage preamble plus one line per
+ * toolset (name, collapsed when-to-use statement, tool count).
+ * @param toolsets - registered toolsets in registration order.
+ * @returns the `get_tools` tool description.
+ */
+export function renderCatalogDescription(toolsets: readonly ToolsetDefinition[]): string {
+  const lines = toolsets.map(t =>
+    `- ${t.name}: ${catalogLine(t.description)} (${t.tools.length} tool${t.tools.length === 1 ? '' : 's'})`)
+  return [
+    'On-demand toolsets. Each entry below names one toolset and when to use it.',
+    'Call this tool with {"toolset": "<name>"} to load that toolset\'s tools into your tool list:',
+    'they become callable from your next turn and stay available for the rest of the session.',
+    'Loading an already-loaded toolset is a harmless no-op that returns its current tool list.',
+    '',
+    'Toolsets:',
+    ...lines,
+  ].join('\n')
+}
