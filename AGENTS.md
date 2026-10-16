@@ -39,5 +39,6 @@ pnpm run build       # tsc + tsdown → lib/（单 bundle）
 ## 坑位记录
 
 - tsdown `external` 字段已标记 deprecated（建议 `deps.neverBundle`）——与 dsh-sleep 保持一致暂用旧写法，仅 WARN 不影响产物。
+- 升级 dsh 后 `dependencies` 里的 `@deepseek-ai/schemastery` 不随 peers 批量升级，且 node_modules 链接可能仍指旧 store 副本（假绿）；逐个 `node -e "console.log(require('./node_modules/@deepseek-ai/<pkg>/package.json').version)"` 探测。改 range 后 pnpm 12 的 verify-deps-before-run 会在下次 `pnpm <script>` 时自动 relink 本地 store。
 - 组合测试里对激活工具的执行断言必须传 `agent`（即 scope key 对象），无 agent 的执行解析不到 scoped layer（`unknown tool`）。
 - `pnpm pack --dry-run` 清单必须只含 `lib/` + `cordis.patch.yml` + `package.json`。

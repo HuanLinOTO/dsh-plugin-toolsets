@@ -17,7 +17,7 @@ function makeToolDef(name: string): ToolDefinition {
     name,
     description: `tool ${name}`,
     parameters: {},
-    output: { schema: { type: 'json' }, render: () => [] },
+    output: { schema: { type: 'string' }, render: () => [] },
     execute: async () => ({}),
   }
 }

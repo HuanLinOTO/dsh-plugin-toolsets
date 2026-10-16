@@ -29,6 +29,12 @@ interface FixtureAgent {
   readonly ctx: Context
 }
 
+/** The agent type `ctx.tools.execute` accepts, derived in place to keep the fixture dependency-free. */
+type ExecAgent = NonNullable<Parameters<Context['tools']['execute']>[0]['agent']>
+
+/** Comparable cast: the runtime Agent carries `ctx: Context`, satisfying FixtureAgent structurally. */
+const execAgent = (agent: FixtureAgent): ExecAgent => agent as ExecAgent
+
 async function mintAgentScope(ctx: Context): Promise<{ agent: FixtureAgent; dispose: () => Promise<void> }> {
   const agent = { ctx: undefined as unknown as Context }
   let scope!: Scope
@@ -89,7 +95,7 @@ describe('toolsets composition (real ToolRuntime + SystemPrompt)', () => {
         callId: ToolCallId('c1'),
         name: 'get_tools',
         arguments: { toolset: 'demo' },
-        agent,
+        agent: execAgent(agent),
       })
       expect(result.isError).not.toBe(true)
       const names = ctx.tools.schemas(agent).map(s => s.name).sort()
@@ -102,7 +108,7 @@ describe('toolsets composition (real ToolRuntime + SystemPrompt)', () => {
         callId: ToolCallId('c2'),
         name: 'get_tools',
         arguments: { toolset: 'demo' },
-        agent,
+        agent: execAgent(agent),
       })
       expect(again.isError).not.toBe(true)
       expect(again.content[0]).toMatchObject({ type: 'text' })
@@ -114,7 +120,7 @@ describe('toolsets composition (real ToolRuntime + SystemPrompt)', () => {
         callId: ToolCallId('c3'),
         name: 'demo_greet',
         arguments: { name: 'toolsets' },
-        agent,
+        agent: execAgent(agent),
       })
       expect(greeted.isError).not.toBe(true)
       expect((greeted.content[0] as { text: string }).text).toBe('hi toolsets')

@@ -14,7 +14,7 @@ function makeTool(name: string): ToolDefinition {
     name,
     description: `tool ${name}`,
     parameters: {},
-    output: { schema: { type: 'json' }, render: () => [] },
+    output: { schema: { type: 'string' }, render: () => [] },
     execute: async () => ({}),
   }
 }
@@ -49,11 +49,11 @@ describe('validateToolset', () => {
   })
 
   it('rejects tools missing output schema/render or execute', () => {
-    const noRender = makeTool('x') as ToolDefinition & { output: Record<string, unknown> }
-    delete noRender.output.render
+    const noRender = makeTool('x')
+    delete (noRender.output as Partial<ToolDefinition['output']>).render
     expect(() => validateToolset(makeToolset({ tools: [noRender] }), [])).toThrow(/output/)
-    const noExecute = makeTool('x') as ToolDefinition & { execute?: unknown }
-    delete noExecute.execute
+    const noExecute = makeTool('x')
+    delete (noExecute as Partial<ToolDefinition>).execute
     expect(() => validateToolset(makeToolset({ tools: [noExecute] }), [])).toThrow(/execute/)
   })
 
