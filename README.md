@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="https://dshfind.com/zh/plugins/huanlinoto/dsh-plugin-toolsets"><img src="https://dshfind.com/api/card/huanlinoto/dsh-plugin-toolsets?lang=zh" alt="dsh-plugin-toolsets card"></a>
+</p>
+
 # dsh-plugin-toolsets
 
 在 ctx 上提供统一的 toolset API：插件注册带"什么时候该用"说明的命名工具集，模型需要时调用全局 `get_tools` 工具按名把整组工具加载进自己所在 agent 的工具列表。
