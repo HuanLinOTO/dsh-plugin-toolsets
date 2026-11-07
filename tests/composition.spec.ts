@@ -3,8 +3,9 @@ import { Context } from '@deepseek-ai/cordis'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import { createScope } from '@deepseek-ai/dsh-scope'
 import type { Scope } from '@deepseek-ai/dsh-scope'
+import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import ToolRuntime, { defineTool } from '@deepseek-ai/dsh-tools'
-import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import type { ToolDefinition, ToolExecutionResult } from '@deepseek-ai/dsh-tools'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ToolsetsService from '../src/index.ts'
 
@@ -12,8 +13,28 @@ async function setup(): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
+  await ctx.plugin(NativeToolExecutor)
   await ctx.plugin(ToolsetsService)
   return ctx
+}
+
+/** One-call batch through the selected executor, unwrapped to the settled result. */
+async function executeOne(
+  ctx: Context,
+  call: {
+    callId: string
+    name: string
+    arguments: Record<string, unknown>
+    signal: AbortSignal
+    agent?: unknown
+  },
+): Promise<ToolExecutionResult> {
+  const batch = await ctx.tools.execute({
+    calls: [{ type: 'tool-call', id: ToolCallId(call.callId), name: call.name, arguments: JSON.stringify(call.arguments) }],
+    signal: call.signal,
+    agent: call.agent as Parameters<Context['tools']['execute']>[0]['agent'],
+  })
+  return batch.results[0]!.result
 }
 
 /**
@@ -90,9 +111,9 @@ describe('toolsets composition (real ToolRuntime + SystemPrompt)', () => {
         description: 'Use when demoing the toolsets plugin.',
         tools: [demoGreet],
       })
-      const result = await ctx.tools.execute({
+      const result = await executeOne(ctx, {
         signal: new AbortController().signal,
-        callId: ToolCallId('c1'),
+        callId: 'c1',
         name: 'get_tools',
         arguments: { toolset: 'demo' },
         agent: execAgent(agent),
@@ -103,9 +124,9 @@ describe('toolsets composition (real ToolRuntime + SystemPrompt)', () => {
       // 其他 scope 不受影响：
       expect(ctx.tools.schemas().map(s => s.name)).toEqual(['get_tools'])
       // 幂等：
-      const again = await ctx.tools.execute({
+      const again = await executeOne(ctx, {
         signal: new AbortController().signal,
-        callId: ToolCallId('c2'),
+        callId: 'c2',
         name: 'get_tools',
         arguments: { toolset: 'demo' },
         agent: execAgent(agent),
@@ -115,9 +136,9 @@ describe('toolsets composition (real ToolRuntime + SystemPrompt)', () => {
       const text = (again.content[0] as { text: string }).text
       expect(text).toContain('already loaded')
       // 激活的工具真实可执行：
-      const greeted = await ctx.tools.execute({
+      const greeted = await executeOne(ctx, {
         signal: new AbortController().signal,
-        callId: ToolCallId('c3'),
+        callId: 'c3',
         name: 'demo_greet',
         arguments: { name: 'toolsets' },
         agent: execAgent(agent),
@@ -138,9 +159,9 @@ describe('toolsets composition (real ToolRuntime + SystemPrompt)', () => {
         description: 'Use when demoing the toolsets plugin.',
         tools: [demoGreet],
       })
-      const bad = await ctx.tools.execute({
+      const bad = await executeOne(ctx, {
         signal: new AbortController().signal,
-        callId: ToolCallId('c1'),
+        callId: 'c1',
         name: 'get_tools',
         arguments: { toolset: 'nope' },
       })
